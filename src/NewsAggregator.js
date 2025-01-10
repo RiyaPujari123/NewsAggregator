@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setPreferences } from './actions';
-import { fetchNewsFromNewsAPI, fetchNewsFromGuardian, fetchNewsFromBBC } from './newsApi';
+import { fetchNewsFromNewsAPI, fetchNewsFromGuardian, fetchNewsFromBBC, fetchNewsFromNYT } from './newsApi';
 import './App.css';
 
 const NewsAggregator = () => {
@@ -28,11 +28,49 @@ const NewsAggregator = () => {
 
     console.log('Filters:', filters);
 
-    const newsAPIArticles = await fetchNewsFromNewsAPI(query, filters);
-    const guardianArticles = await fetchNewsFromGuardian(query, filters);
-    const bbcArticles = await fetchNewsFromBBC(query, filters);
+    let newsAPIArticles = [];
+    let guardianArticles = [];
+    let bbcArticles = [];
+    let nytArticles = [];
 
-    const allArticles = [...newsAPIArticles, ...guardianArticles, ...bbcArticles];
+    // Fetch articles based on the source preference
+    if (preferences.sources === 'newsapi') {
+      newsAPIArticles = await fetchNewsFromNewsAPI(query, filters);
+    }
+    if (preferences.sources === 'guardian') {
+      guardianArticles = await fetchNewsFromGuardian(query, filters);
+      console.log('Guardian Articles:', guardianArticles);
+    }
+    if (preferences.sources === 'bbc-news') {
+      bbcArticles = await fetchNewsFromBBC(query, filters);
+    }
+    if (preferences.sources === 'nyt') {
+      nytArticles = await fetchNewsFromNYT(query, filters);
+    }
+
+    // Normalize articles from all sources
+    const allArticles = [
+      ...newsAPIArticles.map(article => ({
+        ...article,
+        author: article.author || "Unknown",
+        publishedAt: article.publishedAt || "Unknown"
+      })),
+      ...guardianArticles.map(article => ({
+        ...article,
+        author: article.byline ? article.byline : article.webTitle || "Unknown",  // Check for byline, otherwise use webTitle (title)
+        publishedAt: article.webPublicationDate || "Unknown"
+      })),
+      ...bbcArticles.map(article => ({
+        ...article,
+        author: article.author || "Unknown",
+        publishedAt: article.publishedAt || "Unknown"
+      })),
+      ...nytArticles.map(article => ({
+        ...article,
+        author: article.byline ? article.byline : article.headline || "Unknown", // Use headline if byline is missing
+        publishedAt: article.published_date || "Unknown"
+      })),
+    ];
 
     const filteredArticles = allArticles.filter((article) => {
       // Date filter
@@ -131,9 +169,9 @@ const NewsAggregator = () => {
             >
               <option value="">Filter by Source</option>
               <option value="newsapi">NewsAPI</option>
-              <option value="the-guardian">The Guardian</option>
-              <option value="bbc-news">BBC News</option> 
-              <option value="cnn">CNN</option>
+              <option value="guardian">The Guardian</option>
+              <option value="bbc-news">BBC News</option>
+              <option value="nyt">The New York Times</option>
             </select>
           </div>
 
@@ -198,11 +236,13 @@ const NewsAggregator = () => {
         {articles.length > 0 ? (
           articles.map((article, index) => (
             <div key={index} className="article">
-              <h2>{article.title}</h2>
-              <p>{article.description}</p>
+              <h2>{article.headline || article.title}</h2>
+              <p>{article.standfirst || article.description}</p>
               <p><strong>Author:</strong> {article.author || "Unknown"}</p>
-              <p><strong>Published on:</strong> {article.publishedAt ? formatDate(article.publishedAt) : "Unknown Date"}</p>
-              <a href={article.url} target="_blank" rel="noopener noreferrer">Read more</a>
+              <p><strong>Published on:</strong> 
+                {article.publishedAt ? formatDate(article.publishedAt) : "Unknown Date"}
+              </p>
+              <a href={article.webUrl} target="_blank" rel="noopener noreferrer">Read more</a>
             </div>
           ))
         ) : (
