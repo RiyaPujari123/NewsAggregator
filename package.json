@@ -9,6 +9,7 @@
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.7",
     "react-dom": "^19.0.0",
+    "react-icons": "^5.4.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.1.1",
     "react-scripts": "5.0.1",
@@ -43,5 +44,5 @@
       "last 1 safari version"
     ]
   },
-   "proxy": "https://content.guardianapis.com"
+  "proxy": "https://content.guardianapis.com"
 }

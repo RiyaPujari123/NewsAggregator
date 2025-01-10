@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { format } from 'date-fns';
 
-const NEWS_API_KEY = 'fadec82612fe4879b8788e7e93c062e4';
+const NEWS_API_KEY = 'cf274503748f44bc8fbc65d467c7517b';
 const GUARDIAN_API_KEY = 'c3125e6a-cd0b-4821-8b7e-e00cf55d75a9';
 const apiKey = 'A5fNy0rNuLSteWKCuJtI2gADWf6aMZ6g';  // Replace with your actual API key
 
@@ -17,29 +17,43 @@ const handleApiError = (error, source) => {
   }
   return [];
 };
-
-export const fetchNewsFromNewsAPI = async (query = '', sources = '', category = '') => {
-  const API_KEY = NEWS_API_KEY; // Replace with your valid NewsAPI key
-  const baseURL = 'https://newsapi.org/v2/everything';
-
-  const url = new URL(baseURL);
-  if (query) url.searchParams.append('q', query);
-  if (sources) url.searchParams.append('sources', sources); // Ensure sources are valid
-  if (category) url.searchParams.append('category', category);
-  url.searchParams.append('apiKey', API_KEY);
-
+export const fetchNewsFromNewsAPI = async (query, sources) => {
   try {
-      const response = await fetch(url);
-      if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      const data = await response.json();
-      return data.articles;
+    // Ensure sources is a string of comma-separated values, not an array or object
+    const sourcesString = Array.isArray(sources) ? sources.join(',') : sources;
+
+    const url = `https://newsapi.org/v2/everything?q=${query}&sources=${sourcesString}&apiKey=cf274503748f44bc8fbc65d467c7517b`;
+
+    const response = await axios.get(url);
+    return response.data.articles;
   } catch (error) {
-      console.error('Error fetching news from NewsAPI:', error);
-      return [];
+    console.error('Error fetching news from NewsAPI:', error);
+    return [];
   }
 };
+
+// export const fetchNewsFromNewsAPI = async (query = '', sources = '', category = '') => {
+//   const API_KEY = NEWS_API_KEY; // Replace with your valid NewsAPI key
+//   const baseURL = 'https://newsapi.org/v2/everything';
+
+//   const url = new URL(baseURL);
+//   if (query) url.searchParams.append('q', query);
+//   if (sources) url.searchParams.append('sources', sources); // Ensure sources are valid
+//   if (category) url.searchParams.append('category', category);
+//   url.searchParams.append('apiKey', API_KEY);
+
+//   try {
+//       const response = await fetch(url);
+//       if (!response.ok) {
+//           throw new Error(`HTTP error! Status: ${response.status}`);
+//       }
+//       const data = await response.json();
+//       return data.articles;
+//   } catch (error) {
+//       console.error('Error fetching news from NewsAPI:', error);
+//       return [];
+//   }
+// };
 
 
 // Fetch articles from The Guardian API
@@ -61,6 +75,8 @@ export const fetchNewsFromGuardian = async (query = '', filters = {}) => {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     const data = await response.json();
+    console.log('Guardian API Response:', data.response.results);
+    
     return data.response.results;  // Return articles from Guardian
   } catch (error) {
     console.error('Error fetching data from Guardian API:', error);
@@ -80,58 +96,28 @@ export const fetchNewsFromGuardian = async (query = '', filters = {}) => {
 
 export const fetchNewsFromBBC = async (query, filters) => {
   try {
-    const formattedDate = formatDate(filters.date);
+    const url = `https://newsapi.org/v2/everything?q=${query}&sources=bbc-news&apiKey=cf274503748f44bc8fbc65d467c7517b`;
 
-    // Ensure the category is included only if it's valid
-    const category = filters.category || ''; // Ensure an empty string if no category is provided
+    // Fetch articles from BBC without the category parameter if it's not supported
+    const response = await axios.get(url);
 
-    // Special handling for CNN - since CNN doesn't have a sectionName like BBC, we can skip category filter
-    if (filters.sources === 'cnn') {
-      // Return all articles without category filtering for CNN
-      const response = await axios.get('https://newsapi.org/v2/everything', {
-        params: {
-          q: query,
-          from: formattedDate,
-          sources: 'cnn',  // Explicitly fetch articles from CNN
-          apiKey: NEWS_API_KEY,
-          category: category, // Include category only if it's valid
-        },
-      });
-
-      return response.data.articles.filter((article) => {
-        const matchesKeyword = query
-          ? article.title.toLowerCase().includes(query.toLowerCase()) ||
-            article.description.toLowerCase().includes(query.toLowerCase())
-          : true;
-        return matchesKeyword;  // No category filter for CNN
-      });
+    // Apply the category filter client-side after fetching articles
+    let articles = response.data.articles;
+    
+    if (filters.category) {
+      articles = articles.filter(article => 
+        article.category && article.category.toLowerCase().includes(filters.category.toLowerCase())
+      );
     }
 
-    // Default behavior for other sources (BBC, etc.)
-    const response = await axios.get('https://newsapi.org/v2/everything', {
-      params: {
-        q: query,
-        from: formattedDate,
-        sources: filters.sources || 'bbc-news', // Default to 'bbc-news' if no sources filter is provided
-        apiKey: NEWS_API_KEY,
-        category: category, // Include category only if it's valid
-      },
-    });
-
-    return response.data.articles.filter((article) => {
-      const matchesCategory = category
-        ? article.sectionName?.toLowerCase() === category.toLowerCase()
-        : true;
-      const matchesKeyword = query
-        ? article.title.toLowerCase().includes(query.toLowerCase()) ||
-          article.description.toLowerCase().includes(query.toLowerCase())
-        : true;
-      return matchesCategory && matchesKeyword;
-    });
+    return articles;
   } catch (error) {
-    return handleApiError(error, 'BBC');
+    console.error('Error fetching news from BBC:', error);
+    return [];
   }
 };
+
+
 export const fetchNewsFromNYT = async (query, filters) => {
   
   const url = `https://api.nytimes.com/svc/search/v2/articlesearch.json?q=${query}&api-key=${apiKey}`;
