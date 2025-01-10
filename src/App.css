@@ -1,4 +1,4 @@
-
+/* CSS */
 body {
   font-family: 'Arial', sans-serif;
   margin: 0;
@@ -141,7 +141,7 @@ h3{
   margin-left:16px;
 
 }
-/* Style for the search input field */
+
 .search-input {
   margin-left:14px;
   padding: 10px;
@@ -153,13 +153,13 @@ h3{
   transition: border-color 0.3s ease; */
 }
 
-/* Add focus effect for the search input */
+
 .search-input:focus {
   border-color: #0078d4;
   outline: none;
 }
 
-/* Optional: Style for placeholder text */
+
 .search-input::placeholder {
   color: #aaa;
   font-style: italic;
@@ -179,7 +179,7 @@ h3{
 }
 
 .active-filters button:hover {
-  background-color: #ffe2e2; /* Darker red color on hover */
+  background-color: #ffe2e2; 
 }
 
 .footer {
@@ -207,11 +207,11 @@ h3{
   }
 }
 body {
-  padding-bottom: 50px; /* Adjust this value depending on the footer's height */
+  padding-bottom: 50px; 
 }
 
 .pagination {
   position: relative;
-  z-index: 10; /* Ensure the pagination stays above other elements */
-  margin-bottom: 60px; /* Add space below the pagination */
+  z-index: 10; 
+  margin-bottom: 60px;
 }
